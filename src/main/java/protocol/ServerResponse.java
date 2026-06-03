@@ -7,7 +7,6 @@ public class ServerResponse implements Serializable {
 
     private final MessageType type;
 
-    // Корисне навантаження. Може бути чим завгодно: String, List<User> тощо.
     private final Object payload;
 
     public ServerResponse(MessageType type, Object payload) {

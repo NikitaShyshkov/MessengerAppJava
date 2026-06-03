@@ -7,7 +7,7 @@ public class Message implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final User sender;
-    private final User receiver; // null для загального чату
+    private final User receiver;
     private final String text;
     private final LocalDateTime timestamp;
 
@@ -16,6 +16,13 @@ public class Message implements Serializable {
         this.receiver = receiver;
         this.text = text;
         this.timestamp = LocalDateTime.now();
+    }
+
+    public Message(User sender, User receiver, String text, LocalDateTime timestamp) {
+        this.sender = sender;
+        this.receiver = receiver;
+        this.text = text;
+        this.timestamp = timestamp;
     }
 
     public User getSender() {

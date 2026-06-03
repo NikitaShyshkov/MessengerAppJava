@@ -1,15 +1,12 @@
 package server;
 
-import protocol.AuthRequest;
-import protocol.Message;
-import protocol.ServerResponse;
-import protocol.MessageType;
-import protocol.User;
+import protocol.*;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
 
 public class ClientHandler implements Runnable {
     private final Socket socket;
@@ -17,7 +14,6 @@ public class ClientHandler implements Runnable {
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
-    // Зберігаємо логін клієнта, щоб знати, кого видаляти при відключенні
     private String authenticatedUsername = null;
 
     public ClientHandler(Socket socket, ServerManager serverManager) {
@@ -28,21 +24,24 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            // 1. Ініціалізація потоків (порядок критично важливий!)
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
 
-            // 2. Безкінечний цикл читання вхідних об'єктів
             while (true) {
                 Object incomingData = in.readObject();
 
-                // 3. Визначаємо тип об'єкта через instanceof
                 if (incomingData instanceof AuthRequest) {
                     handleAuth((AuthRequest) incomingData);
                 }
                 else if (incomingData instanceof Message) {
                     handleMessage((Message) incomingData);
+                }
+                else if (incomingData instanceof HistoryRequest) {
+                    HistoryRequest req = (HistoryRequest) incomingData;
+                    List<Message> history = serverManager.getChatHistory(req.getUserA(), req.getUserB());
+
+                    sendResponse(new ServerResponse(MessageType.HISTORY_RESPONSE, history));
                 }
             }
         } catch (IOException | ClassNotFoundException e) {
@@ -52,43 +51,41 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    // Обробка запиту на вхід/реєстрацію
     private void handleAuth(AuthRequest request) {
-        String username = request.getUsername();
+        String username = request.getUsername().trim();
 
-        // TODO: Пізніше тут буде виклик AuthService для перевірки файлу з паролями.
-        // Поки що ми просто погоджуємося і пускаємо всіх:
+        if (!serverManager.addClient(username, this)) {
+            sendResponse(new ServerResponse(MessageType.AUTH_ERROR, "Ім'я вже зайняте. Введіть інше ім'я."));
+            return;
+        }
 
         this.authenticatedUsername = username;
-        serverManager.addClient(username, this);
 
-        // Відправляємо клієнту відповідь про успіх (і об'єкт User як payload)
         sendResponse(new ServerResponse(MessageType.AUTH_SUCCESS, new User(username)));
+        serverManager.broadcastUserList();
     }
 
-    // Обробка звичайного повідомлення
     private void handleMessage(Message message) {
         if (authenticatedUsername != null) {
-            // Віддаємо повідомлення нашому менеджеру, хай шукає адресата
             serverManager.routeMessage(message);
         }
     }
 
-    // Метод, який викликає ServerManager, щоб відправити повідомлення ЦЬОМУ клієнту
-    public void sendMessage(Message message) {
+    public synchronized void sendMessage(Message message) {
         try {
             out.writeObject(message);
-            out.flush(); // Обов'язково виштовхуємо байти в мережу
+            out.flush();
+            out.reset();
         } catch (IOException e) {
             System.err.println("Помилка відправки повідомлення: " + e.getMessage());
         }
     }
 
-    // Метод для відправки системних відповідей
-    private void sendResponse(ServerResponse response) {
+    public synchronized void sendResponse(ServerResponse response) {
         try {
             out.writeObject(response);
             out.flush();
+            out.reset();
         } catch (IOException e) {
             System.err.println("Помилка відправки відповіді: " + e.getMessage());
         }

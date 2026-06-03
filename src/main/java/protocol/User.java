@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class User implements Serializable {
-    // Рекомендується додавати serialVersionUID для стабільної серіалізації
     private static final long serialVersionUID = 1L;
 
     private String username;
@@ -12,7 +11,7 @@ public class User implements Serializable {
 
     public User(String username) {
         this.username = username;
-        this.isOnline = false;
+        this.isOnline = true;
     }
 
     public String getUsername() {

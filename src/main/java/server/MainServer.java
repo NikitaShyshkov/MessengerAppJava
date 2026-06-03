@@ -13,11 +13,9 @@ public class MainServer {
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             while (true) {
-                // Метод accept() зупиняє виконання коду і чекає, поки не підключиться клієнт
                 Socket clientSocket = serverSocket.accept();
-                System.out.println("🔗 Нове підключення з IP: " + clientSocket.getInetAddress());
+                System.out.println("Нове підключення з IP: " + clientSocket.getInetAddress());
 
-                // Створюємо окремий обробник для цього підключення і запускаємо його в новому потоці
                 ClientHandler clientHandler = new ClientHandler(clientSocket, serverManager);
                 new Thread(clientHandler).start();
             }

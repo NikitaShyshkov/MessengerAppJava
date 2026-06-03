@@ -1,15 +1,9 @@
 package protocol;
 
 public enum MessageType {
-    // Успішна авторизація/реєстрація
     AUTH_SUCCESS,
-
-    // Помилка авторизації/реєстрації (наприклад, невірний пароль або логін зайнятий)
     AUTH_ERROR,
-
-    // Оновлення списку користувачів (сервер надсилає новий список тих, хто онлайн)
     USER_LIST_UPDATE,
-
-    // Загальна системна помилка
-    GENERAL_ERROR
+    GENERAL_ERROR,
+    HISTORY_RESPONSE
 }
